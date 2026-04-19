@@ -42,7 +42,7 @@
         ※Range: ±10Hz. Check your octave accuracy.
     </div>
 
-    <button style="margin-top:20px; background:#00ffcc; color:#1a1a1a; font-weight:bold;" onclick="startTuner()">
+    <button id="startBtn" class="btn-tuning" onclick="startTuner()">
         LISTEN / START
     </button>
     
@@ -60,29 +60,47 @@
 
         // チューナー開始
         async function startTuner() {
-            // ブラウザで音声処理を始めるための「許可をもらう」動作
-            await Tone.start();
-
-            // マイクを使うためのオブジェクト
-            mic = new Tone.UserMedia();
-
-            // マイクの音を「波形データ」として読み取る
-            analyser = new Tone.Analyser("waveform", 2048);
-
-            // マイクの使用許可をユーザーに求める
-            await mic.open();
+            const btn = document.getElementById('startBtn');
             
-            // マイクの音を解析器につなぐ
-            mic.connect(analyser);
+            // クラスをトグル（あれば消す、なければ足す）
+            btn.classList.toggle('active');
 
-            // 0.1秒ごとに updateTuner() を呼び出して、「今の音は何Hz？」を調べ続ける
-            // setInterval(updateTuner, 100);
-            // 初回起動
-            const speed = document.getElementById('speedSelect').value;
-            updateInterval = setInterval(updateTuner, parseInt(speed));
-            
-            // ボタンの文言を変えるなどの演出
-            document.querySelector('.btn-start').innerText = "TUNING...";
+            if (btn.classList.contains('active')) {
+                // --- 起動処理 ---
+                btn.innerText = "STOP / ACTIVE";
+                
+                // ブラウザで音声処理を始めるための「許可をもらう」動作
+                await Tone.start();
+
+                // マイクを使うためのオブジェクト
+                mic = new Tone.UserMedia();
+
+                // マイクの音を「波形データ」として読み取る
+                analyser = new Tone.Analyser("waveform", 2048);
+
+                // マイクの使用許可をユーザーに求める
+                await mic.open();
+                
+                // マイクの音を解析器につなぐ
+                mic.connect(analyser);
+
+                // 0.1秒ごとに updateTuner() を呼び出して、「今の音は何Hz？」を調べ続ける
+                // setInterval(updateTuner, 100);
+                // 初回起動
+                const speed = document.getElementById('speedSelect').value;
+                updateInterval = setInterval(updateTuner, parseInt(speed));
+                
+                // ボタンの文言を変えるなどの演出
+                document.querySelector('.btn-start').innerText = "TUNING...";
+            } else {
+                // --- 停止処理 ---
+                btn.innerText = "LISTEN / START";
+                
+                if (mic) {
+                    mic.close(); // マイクを止める
+                    clearInterval(updateInterval); // 更新を止める
+                }
+            }
         }
 
         // 設定した周期ごとに音を検証
@@ -248,5 +266,25 @@
             ctx.fillText((diff > 0 ? "+" : "") + diff.toFixed(1) + " Hz", x, 15);
         }
     </script>
+    <style>
+        /* 通常のボタン */
+        .btn-tuning {
+            margin-top:20px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            border: 2px solid #00ffcc; /* 枠線をブランドカラーに */
+            background: transparent;    /* 背景は透明 */
+            color: #00ffcc;             /* 文字色をブランドカラーに */
+            transition: all 0.3s;       /* アニメーションを滑らかに */
+        }
+
+        /* 反転時のボタン（activeクラスが付与された時） */
+        .btn-tuning.active {
+            background: #00ffcc;        /* 背景をブランドカラーに */
+            color: #1a1a1a;             /* 文字色を暗く */
+        }
+    </style>
 </body>
 </html>
