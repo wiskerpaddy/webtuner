@@ -9,94 +9,89 @@
         /* 全体の基本設定 */
         body {
             margin: 0;
-            padding: 20px;
+            padding: 10px; /* 余白を少し詰める */
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background: #1a1a1a; /* 背景色を復活 */
+            /* dvhを使うことでブラウザのツールバーを考慮した高さになります */
+            height: 100dvh; 
+            background: #1a1a1a;
             color: #fff;
             font-family: sans-serif;
+            overflow: hidden; /* 画面が揺れるのを防ぐ */
         }
 
-        /* コンテナの幅を制限して中央に寄せる */
         .app-container {
             width: 100%;
-            max-width: 500px; /* ここでPCでの広がりを抑える */
+            max-width: 500px;
+            height: 100%;
             display: flex;
             flex-direction: column;
+            /* 要素を上下にきれいに分散させる */
+            justify-content: space-between; 
             align-items: center;
+            padding-bottom: env(safe-area-inset-bottom); /* iPhoneのホームバー対策 */
         }
 
-        h1 { font-size: 1.5rem; margin-bottom: 20px; }
+        h1 { 
+            font-size: 1.2rem; /* 少し小さくしてスペースを稼ぐ */
+            margin: 10px 0; 
+        }
 
-        /* 音名表示：スマホで特大、PCでも適切に */
         #note {
-            font-size: clamp(80px, 25vw, 150px); /* 最小80px, 最大150pxの間で可変 */
+            /* 高さが足りない場合を考慮して、少し控えめなサイズに調整 */
+            font-size: clamp(60px, 20vh, 120px); 
             font-weight: bold;
             color: #00ffcc;
-            margin: 10px 0;
+            margin: 0;
         }
 
-        #freq { font-size: 1.2rem; color: #888; margin-bottom: 20px; }
+        #freq { font-size: 1rem; color: #888; margin-bottom: 5px; }
 
-        /* メーター */
         canvas {
             width: 100%;
-            height: auto;
+            max-height: 100px; /* メーターの高さを制限 */
             background: #222;
             border-radius: 8px;
             aspect-ratio: 400 / 120;
         }
 
-        /* コントロール群 */
         .controls {
             width: 100%;
             display: flex;
-            gap: 10px;
-            margin: 20px 0;
+            gap: 8px;
+            margin: 5px 0;
         }
 
-        /* ボタンとセレクトボックスの共通設定 */
         button, select {
-            padding: 12px;
-            font-size: 1rem;
+            padding: 10px; /* パディングを少し詰める */
+            font-size: 0.95rem;
             border-radius: 5px;
             border: none;
             cursor: pointer;
-            flex: 1; /* 横に並べる時は均等に */
+            flex: 1;
         }
 
-        /* 下部のスタートボタンは独立させる */
+        /* スタートボタン */
         .btn-tuning {
-            width: 100%; /* 横幅いっぱい */
-            max-width: 300px; /* でも広がりすぎない */
-            margin-top: 20px;
+            width: 100%;
+            max-width: 300px;
+            margin-top: 10px;
+            margin-bottom: 10px; /* 下端にピッタリつきすぎないように */
+            padding: 15px;
             background: transparent;
             border: 2px solid #00ffcc;
             color: #00ffcc;
             font-weight: bold;
-            transition: all 0.3s;
         }
 
-        .btn-tuning.active {
-            background: #00ffcc;
-            color: #1a1a1a;
-        }
-
-        /* 状態別カラー */
+        .btn-tuning.active { background: #00ffcc; color: #1a1a1a; }
         .active { background: #00ffcc !important; color: #1a1a1a !important; font-weight: bold; }
         .inactive { background: #444; color: #ccc; }
-        .info { color: #888; font-size: 0.8rem; margin-top: 10px; text-align: center; }
+        .info { color: #888; font-size: 0.75rem; margin-top: 5px; text-align: center; }
 
-        /* セレクトボックスのスタイル微調整 */
-        select {
-            background: #333;
-            color: #fff;
-            border: 1px solid #555;
-        }
+        select { background: #333; color: #fff; border: 1px solid #555; }
     </style>
 </head>
 <body>
