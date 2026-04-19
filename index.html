@@ -2,94 +2,137 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Simple Tuner (Tone.js)</title>
+    <title>Sax Master Tuner</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #222; color: #fff; }
-        #note { font-size: 5rem; margin-top: 20px; color: #00ffcc; }
-        #freq { font-size: 1.5rem; color: #888; }
-        button { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; border-radius: 30px; border: none; background: #00ffcc; color: #222; }
+        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: #fff; }
+        #note { font-size: 6rem; font-weight: bold; color: #00ffcc; margin: 10px 0; }
+        #freq { font-size: 1.2rem; color: #888; }
+        canvas { background: #222; border-radius: 8px; margin: 20px 0; }
+        .controls { margin-top: 20px; display: flex; justify-content: center; gap: 10px; }
+        button { padding: 12px 20px; font-size: 1rem; cursor: pointer; border-radius: 5px; border: none; }
+        .active { background: #00ffcc; color: #1a1a1a; font-weight: bold; }
+        .inactive { background: #444; color: #ccc; }
+        .info { color: #aaa; font-size: 0.9rem; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <h1>Simple Tuner</h1>
-    <button onclick="startTuner()">チューナー起動</button>
+    <h1>Sax Master Tuner</h1>
+    
+    <div class="controls">
+        <button id="pianoBtn" class="active" onclick="setMode('piano')">ピアノ (実音)</button>
+        <button id="saxBtn" class="inactive" onclick="setMode('sax')">アルトサックス (E♭)</button>
+    </div>
+
     <div id="note">--</div>
     <div id="freq">0.00 Hz</div>
 
+    <canvas id="meter" width="400" height="120"></canvas>
+
+    <div class="info">
+        ※±10Hzの範囲を表示中。オクターブのズレを確認してください。
+    </div>
+    <button style="margin-top:20px; background:#00ffcc;" onclick="startTuner()">マイク開始</button>
+
     <script>
         let mic, analyser;
+        let mode = 'piano'; // 'piano' or 'sax'
         const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+        function setMode(m) {
+            mode = m;
+            document.getElementById('pianoBtn').className = (m === 'piano' ? 'active' : 'inactive');
+            document.getElementById('saxBtn').className = (m === 'sax' ? 'active' : 'inactive');
+        }
 
         async function startTuner() {
             await Tone.start();
             mic = new Tone.UserMedia();
-            // 解析用にAnalyserNodeを作成（大きさは2048以上が推奨）
             analyser = new Tone.Analyser("waveform", 2048);
-            
             await mic.open();
             mic.connect(analyser);
-
-            // 500ms(0.5秒)周期でUIを更新
-            setInterval(updateTuner, 500);
+            setInterval(updateTuner, 100);
         }
 
         function updateTuner() {
-            const buffer = analyser.getValue(); // 波形データ
+            const buffer = analyser.getValue();
             const sampleRate = Tone.context.sampleRate;
             const frequency = autoCorrelate(buffer, sampleRate);
 
+            const canvas = document.getElementById('meter');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawScale(ctx, canvas.width, canvas.height);
+
             if (frequency !== -1) {
-                const midiNum = 12 * Math.log2(frequency / 440) + 69;
-                const noteIndex = Math.round(midiNum) % 12;
+                // 実音のMIDIノート番号
+                let midiNum = 12 * Math.log2(frequency / 440) + 69;
                 
+                // 【修正箇所】アルトサックス(Eb管)の移調対応
+                // 楽譜のC(ド) = 実音のEb(ミb) なので、表示は実音から「3半音分」引きます
+                let displayMidiNum = (mode === 'sax') ? midiNum - 3 : midiNum;
+                
+                // マイナスのインデックスにならないよう調整して音名を取得
+                const noteIndex = (Math.round(displayMidiNum) % 12 + 12) % 12;
                 document.getElementById('note').innerText = noteNames[noteIndex];
                 document.getElementById('freq').innerText = frequency.toFixed(2) + " Hz";
-            } else {
-                document.getElementById('note').innerText = "--";
+
+                // ターゲット（理想のピッチ）との差分
+                // 移調に関わらず、鳴っている実音のHzがその音の理想値からどれだけズレているかを表示
+                const perfectPitch = 440 * Math.pow(2, (Math.round(midiNum) - 69) / 12);
+                const diff = frequency - perfectPitch;
+
+                drawNeedle(ctx, diff, canvas.width, canvas.height);
             }
         }
 
-        // 自己相関関数によるピッチ検出アルゴリズム
+        // --- 以下、描画と解析のロジック（変更なし） ---
         function autoCorrelate(buffer, sampleRate) {
             let size = buffer.length;
             let rms = 0;
-            for (let i = 0; i < size; i++) {
-                rms += buffer[i] * buffer[i];
-            }
+            for (let i = 0; i < size; i++) rms += buffer[i] * buffer[i];
             rms = Math.sqrt(rms / size);
-            if (rms < 0.01) return -1; // 音が小さすぎる場合は無視
-
+            if (rms < 0.01) return -1;
             let r1 = 0, r2 = size - 1, thres = 0.2;
-            for (let i = 0; i < size / 2; i++) {
-                if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
-            }
-            for (let i = 1; i < size / 2; i++) {
-                if (Math.abs(buffer[size - i]) < thres) { r2 = size - i; break; }
-            }
-
+            for (let i = 0; i < size / 2; i++) { if (Math.abs(buffer[i]) < thres) { r1 = i; break; } }
+            for (let i = 1; i < size / 2; i++) { if (Math.abs(buffer[size - i]) < thres) { r2 = size - i; break; } }
             let buf = buffer.slice(r1, r2);
             size = buf.length;
-
             let c = new Array(size).fill(0);
             for (let i = 0; i < size; i++) {
-                for (let j = 0; j < size - i; j++) {
-                    c[i] = c[i] + buf[j] * buf[j + i];
-                }
+                for (let j = 0; j < size - i; j++) c[i] = c[i] + buf[j] * buf[j + i];
             }
-
             let d = 0;
             while (c[d] > c[d + 1]) d++;
             let maxval = -1, maxpos = -1;
-            for (let i = d; i < size; i++) {
-                if (c[i] > maxval) {
-                    maxval = c[i];
-                    maxpos = i;
-                }
-            }
-            let T0 = maxpos;
+            for (let i = d; i < size; i++) { if (c[i] > maxval) { maxval = c[i]; maxpos = i; } }
+            return sampleRate / maxpos;
+        }
 
-            return sampleRate / T0;
+        function drawScale(ctx, w, h) {
+            ctx.strokeStyle = "#555";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(w / 2, 10); ctx.lineTo(w / 2, h - 10);
+            ctx.stroke();
+            ctx.fillStyle = "#888";
+            ctx.textAlign = "center";
+            ctx.fillText("-10Hz", 30, h - 10);
+            ctx.fillText("Center", w / 2, h - 10);
+            ctx.fillText("+10Hz", w - 30, h - 10);
+        }
+
+        function drawNeedle(ctx, diff, w, h) {
+            let ratio = (diff + 10) / 20; // ±10Hzの範囲
+            ratio = Math.max(0, Math.min(1, ratio));
+            const x = ratio * w;
+            ctx.strokeStyle = Math.abs(diff) <= 10 ? "#00ffcc" : "#ff4444";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(x, 20); ctx.lineTo(x, h - 30);
+            ctx.stroke();
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.fillText((diff > 0 ? "+" : "") + diff.toFixed(1) + " Hz", x, 15);
         }
     </script>
 </body>
