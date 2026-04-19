@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <link rel="manifest" href="manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta charset="UTF-8">
     <title>Sax Master Tuner</title>
@@ -342,6 +343,11 @@
             
             // 針の上に「+3.2Hz」などのズレを表示
             ctx.fillText((diff > 0 ? "+" : "") + diff.toFixed(1) + " Hz", x, 15);
+        }
+        
+        // サービスワーカーの登録（インストール可能にするための儀式）
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
         }
     </script>
     <style>
