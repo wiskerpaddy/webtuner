@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Tuner (Tone.js)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #222; color: #fff; }
+        #note { font-size: 5rem; margin-top: 20px; color: #00ffcc; }
+        #freq { font-size: 1.5rem; color: #888; }
+        button { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; border-radius: 30px; border: none; background: #00ffcc; color: #222; }
+    </style>
+</head>
+<body>
+    <h1>Simple Tuner</h1>
+    <button onclick="startTuner()">チューナー起動</button>
+    <div id="note">--</div>
+    <div id="freq">0.00 Hz</div>
+
+    <script>
+        let mic, analyser;
+        const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+        async function startTuner() {
+            await Tone.start();
+            mic = new Tone.UserMedia();
+            // 解析用にAnalyserNodeを作成（大きさは2048以上が推奨）
+            analyser = new Tone.Analyser("waveform", 2048);
+            
+            await mic.open();
+            mic.connect(analyser);
+
+            // 500ms(0.5秒)周期でUIを更新
+            setInterval(updateTuner, 500);
+        }
+
+        function updateTuner() {
+            const buffer = analyser.getValue(); // 波形データ
+            const sampleRate = Tone.context.sampleRate;
+            const frequency = autoCorrelate(buffer, sampleRate);
+
+            if (frequency !== -1) {
+                const midiNum = 12 * Math.log2(frequency / 440) + 69;
+                const noteIndex = Math.round(midiNum) % 12;
+                
+                document.getElementById('note').innerText = noteNames[noteIndex];
+                document.getElementById('freq').innerText = frequency.toFixed(2) + " Hz";
+            } else {
+                document.getElementById('note').innerText = "--";
+            }
+        }
+
+        // 自己相関関数によるピッチ検出アルゴリズム
+        function autoCorrelate(buffer, sampleRate) {
+            let size = buffer.length;
+            let rms = 0;
+            for (let i = 0; i < size; i++) {
+                rms += buffer[i] * buffer[i];
+            }
+            rms = Math.sqrt(rms / size);
+            if (rms < 0.01) return -1; // 音が小さすぎる場合は無視
+
+            let r1 = 0, r2 = size - 1, thres = 0.2;
+            for (let i = 0; i < size / 2; i++) {
+                if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+            }
+            for (let i = 1; i < size / 2; i++) {
+                if (Math.abs(buffer[size - i]) < thres) { r2 = size - i; break; }
+            }
+
+            let buf = buffer.slice(r1, r2);
+            size = buf.length;
+
+            let c = new Array(size).fill(0);
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size - i; j++) {
+                    c[i] = c[i] + buf[j] * buf[j + i];
+                }
+            }
+
+            let d = 0;
+            while (c[d] > c[d + 1]) d++;
+            let maxval = -1, maxpos = -1;
+            for (let i = d; i < size; i++) {
+                if (c[i] > maxval) {
+                    maxval = c[i];
+                    maxpos = i;
+                }
+            }
+            let T0 = maxpos;
+
+            return sampleRate / T0;
+        }
+    </script>
+</body>
+</html>
