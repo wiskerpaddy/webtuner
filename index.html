@@ -1,19 +1,102 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta charset="UTF-8">
     <title>Sax Master Tuner</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: #fff; }
-        #note { font-size: 6rem; font-weight: bold; color: #00ffcc; margin: 10px 0; }
-        #freq { font-size: 1.2rem; color: #888; }
-        canvas { background: #222; border-radius: 8px; margin: 20px 0; }
-        .controls { margin-top: 20px; display: flex; justify-content: center; gap: 10px; }
-        button { padding: 12px 20px; font-size: 1rem; cursor: pointer; border-radius: 5px; border: none; }
-        .active { background: #00ffcc; color: #1a1a1a; font-weight: bold; }
+        /* 全体の基本設定 */
+        body {
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #1a1a1a; /* 背景色を復活 */
+            color: #fff;
+            font-family: sans-serif;
+        }
+
+        /* コンテナの幅を制限して中央に寄せる */
+        .app-container {
+            width: 100%;
+            max-width: 500px; /* ここでPCでの広がりを抑える */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { font-size: 1.5rem; margin-bottom: 20px; }
+
+        /* 音名表示：スマホで特大、PCでも適切に */
+        #note {
+            font-size: clamp(80px, 25vw, 150px); /* 最小80px, 最大150pxの間で可変 */
+            font-weight: bold;
+            color: #00ffcc;
+            margin: 10px 0;
+        }
+
+        #freq { font-size: 1.2rem; color: #888; margin-bottom: 20px; }
+
+        /* メーター */
+        canvas {
+            width: 100%;
+            height: auto;
+            background: #222;
+            border-radius: 8px;
+            aspect-ratio: 400 / 120;
+        }
+
+        /* コントロール群 */
+        .controls {
+            width: 100%;
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        /* ボタンとセレクトボックスの共通設定 */
+        button, select {
+            padding: 12px;
+            font-size: 1rem;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            flex: 1; /* 横に並べる時は均等に */
+        }
+
+        /* 下部のスタートボタンは独立させる */
+        .btn-tuning {
+            width: 100%; /* 横幅いっぱい */
+            max-width: 300px; /* でも広がりすぎない */
+            margin-top: 20px;
+            background: transparent;
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-tuning.active {
+            background: #00ffcc;
+            color: #1a1a1a;
+        }
+
+        /* 状態別カラー */
+        .active { background: #00ffcc !important; color: #1a1a1a !important; font-weight: bold; }
         .inactive { background: #444; color: #ccc; }
-        .info { color: #aaa; font-size: 0.9rem; margin-top: 10px; }
+        .info { color: #888; font-size: 0.8rem; margin-top: 10px; text-align: center; }
+
+        /* セレクトボックスのスタイル微調整 */
+        select {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+        }
     </style>
 </head>
 <body>
@@ -267,24 +350,7 @@
         }
     </script>
     <style>
-        /* 通常のボタン */
-        .btn-tuning {
-            margin-top:20px;
-            padding: 12px 20px;
-            font-size: 1rem;
-            cursor: pointer;
-            border-radius: 5px;
-            border: 2px solid #00ffcc; /* 枠線をブランドカラーに */
-            background: transparent;    /* 背景は透明 */
-            color: #00ffcc;             /* 文字色をブランドカラーに */
-            transition: all 0.3s;       /* アニメーションを滑らかに */
-        }
 
-        /* 反転時のボタン（activeクラスが付与された時） */
-        .btn-tuning.active {
-            background: #00ffcc;        /* 背景をブランドカラーに */
-            color: #1a1a1a;             /* 文字色を暗く */
-        }
     </style>
 </body>
 </html>
