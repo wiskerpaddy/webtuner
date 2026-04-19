@@ -19,9 +19,9 @@
 <body>
     <h1>Sax Master Tuner</h1>
     
-    <div class="controls">
-        <button id="pianoBtn" class="active" onclick="setMode('piano')">ピアノ (実音)</button>
-        <button id="saxBtn" class="inactive" onclick="setMode('sax')">アルトサックス (E♭)</button>
+    <div class="controls" style="margin: 10px">
+        <button id="pianoBtn" class="active" onclick="setMode('piano')">Piano</button>
+        <button id="saxBtn" class="inactive" onclick="setMode('sax')">A.Sax (E♭)</button>
     </div>
 
     <div id="note">--</div>
@@ -29,11 +29,23 @@
 
     <canvas id="meter" width="400" height="120"></canvas>
 
-    <div class="info">
-        ※±10Hzの範囲を表示中。オクターブのズレを確認してください。
+    <div class="controls" style="margin-top: 10px;">
+        <label for="speedSelect" style="font-size: 0.9rem; color: #aaa;">Refresh Rate:</label>
+        <select id="speedSelect" onchange="changeSpeed()" style="padding: 5px; border-radius: 5px; background: #333; color: #fff; border: 1px solid #555;">
+            <option value="100">Instant (Real-time)</option>
+            <option value="500" selected>Normal (0.5s)</option>
+            <option value="1000">Stable (1.0s)</option>
+        </select>
     </div>
-    <button style="margin-top:20px; background:#00ffcc;" onclick="startTuner()">マイク開始</button>
 
+    <div class="info">
+        ※Range: ±10Hz. Check your octave accuracy.
+    </div>
+
+    <button style="margin-top:20px; background:#00ffcc; color:#1a1a1a; font-weight:bold;" onclick="startTuner()">
+        LISTEN / START
+    </button>
+    
     <script>
         let mic, analyser;
         let mode = 'piano'; // 'piano' or 'sax'
@@ -64,7 +76,13 @@
             mic.connect(analyser);
 
             // 0.1秒ごとに updateTuner() を呼び出して、「今の音は何Hz？」を調べ続ける
-            setInterval(updateTuner, 100);
+            // setInterval(updateTuner, 100);
+            // 初回起動
+            const speed = document.getElementById('speedSelect').value;
+            updateInterval = setInterval(updateTuner, parseInt(speed));
+            
+            // ボタンの文言を変えるなどの演出
+            document.querySelector('.btn-start').innerText = "TUNING...";
         }
 
         // 設定した周期ごとに音を検証
